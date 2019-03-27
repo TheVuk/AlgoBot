@@ -8,6 +8,7 @@ from kafka import KafkaProducer
 from random import randint
 import json
 import os
+import sys
 import traceback
 import logging
 import time
@@ -22,6 +23,7 @@ producer = KafkaProducer(bootstrap_servers=['127.0.0.1:9092'],
                          value_serializer=lambda x:
                          dumps(x).encode('utf-8'))
 
+SYM = Ab_Obj.parser.get('common', 'back_test_symbol')
 TWS_IP = Ab_Obj.parser.get('common', 'gateway_ip')
 TMS_PORT = int(Ab_Obj.parser.get('common', 'gateway_port'))
 IB_CLIENT_ID = int(Ab_Obj.parser.get('common', 'IB_ClientId'))
@@ -31,10 +33,12 @@ IB_CLIENT_ID = int(Ab_Obj.parser.get('common', 'IB_ClientId'))
 class IBService(IBWrapper, IBClient):
 
     contract = None
+    hdate_prev = Ab_Obj.parser.get('common', 'back_test_prev_date')
     hdate = Ab_Obj.parser.get('common', 'back_test_date')
+    cdate = ""
     back_test_symbol = Ab_Obj.parser.get('common', 'back_test_symbol')
-    #symbol_count = len(back_test_symbol)
-    #hrhd_current_count = 0
+    running_hdate = False
+
     def __init__(self):
         try:
             IBWrapper.__init__(self)
@@ -88,13 +92,13 @@ class IBService(IBWrapper, IBClient):
             if len(ticks) >= 1000:
                 i = 0
                 for tick in ticks:
-                    #str(time.strftime("%D %H:%M:%S", time.localtime(int(tick.time))))
+                    str(time.strftime("%D %H:%M:%S", time.localtime(int(tick.time))))
                     data = {'Symbol': self.back_test_symbol, 'Price': tick.price, 'Timestamp': tick.time}
                     producer.send("HRHD", value=data)
                     i = i + 1
                     if i == 1000:
                         self.reqHistoricalTicks(randint(10, 999), self.contract,
-                                                str(self.hdate) + " " +
+                                                str(self.cdate) + " " +
                                                 str(time.strftime("%H:%M:%S", time.localtime(int(tick.time)))),
                                                 "", 1000, "TRADES", 1, True, [])
                         break
@@ -103,10 +107,19 @@ class IBService(IBWrapper, IBClient):
                     data = {'Symbol': self.back_test_symbol, 'Price': tick.price,
                             'Timestamp': tick.time}
                     producer.send("HRHD", value=data)
-                time.sleep(10)
-                print(Ab_Obj.one_min_pd_DF.head(50))
-                print("------------------------------------")
-                print(Ab_Obj.three_min_pd_DF.head(50))
+                if self.running_hdate is True:
+                    time.sleep(300)
+                    Ab_Obj.one_min_pd_DF.to_csv(r'/Users/sivaamur/Desktop/onemin_'+SYM+'_'+self.hdate+'.csv')
+                    print("------------------------------------")
+                    sys.exit()
+                if self.running_hdate is False:
+                    time.sleep(60)
+                    print("Requesting current day data...")
+                    self.running_hdate = True
+                    self.cdate = self.hdate
+                    self.reqHistoricalTicks(1, self.contract, str(self.hdate) + " 09:10:00", "", 1000, "TRADES", 1,
+                                             True, [])
+                    Ab_Obj.start_sapm = True
         except Exception as ex:
             logging.error(traceback.format_exc())
             print(traceback.format_exc())
@@ -114,7 +127,8 @@ class IBService(IBWrapper, IBClient):
     def get_hrhd_data(self, ibcon):
         try:
             self.contract = self.get_stk_contract(self.back_test_symbol)
-            ibcon.reqHistoricalTicks(1, self.contract, str(self.hdate)+" 09:10:00", "", 1000, "TRADES", 1, True, [])
+            self.cdate = self.hdate_prev
+            ibcon.reqHistoricalTicks(1, self.contract, str(self.hdate_prev)+" 14:30:00", "", 1000, "TRADES", 1, True, [])
             ibcon.run()
         except:
             logger.error(traceback.format_exc())

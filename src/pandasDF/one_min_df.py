@@ -1,5 +1,5 @@
 from src.main.algo_bot_objects import AlgoBotObjects as abObj
-from src.pandasDF import indicators as indi_obj
+from src.pandasDF import one_min_indicators as indi_obj
 from src.loghandler import log
 import traceback
 import time
@@ -25,15 +25,10 @@ class OneMinDF(object):
                 one_min_bars = ti.price.resample('1min').ohlc()
                 for index, row in one_min_bars.iterrows():
                     abObj.one_min_pd_DF = abObj.one_min_pd_DF.append(row)
-                indi_obj.moving_average("1MIN", 25)
-                indi_obj.exponential_moving_average("1MIN", 20)
+                indi_obj.load_indicators()
             except:
                 print(traceback.format_exc())
                 logger.error(traceback.format_exc())
-
-        def load_indicators():
-            pass
-
         tick_time = ticks.get('Timestamp')
         tick_price = ticks.get('Price')
         try:

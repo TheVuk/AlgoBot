@@ -1,5 +1,5 @@
 from src.main.algo_bot_objects import AlgoBotObjects as abObj
-from src.pandasDF import indicators as indi_obj
+from src.pandasDF import three_min_indicators as indi_obj
 import traceback
 from src.loghandler import log
 import time
@@ -25,8 +25,11 @@ class ThreeMinDF(object):
                 three_min_bars = ti.price.resample('3min').ohlc()
                 for index, row in three_min_bars.iterrows():
                     abObj.three_min_pd_DF = abObj.three_min_pd_DF.append(row)
-                indi_obj.moving_average("3MIN", 25)
-                indi_obj.exponential_moving_average("3MIN", 20)
+                indi_obj.moving_average(25)
+                indi_obj.exponential_moving_average(20)
+                indi_obj.macd(12, 26)
+                indi_obj.adx(20)
+                indi_obj.rsi(14)
             except:
                 print(traceback.format_exc())
                 logger.error(traceback.format_exc())

@@ -8,17 +8,18 @@ class AlgoBotObjects:
     parser = ConfigParser()
     parser.read(os.getenv("ALGOBOT_CONFIG"))
 
+    start_sapm = False
     # all below used in one min data frame
-    #one_min_df = None
     one_min_ticks = []
     c_one_min = 0
     one_min_pd_DF = pd.DataFrame([])
-    #one_min_pd_DF['time'] = pd.to_datetime(one_min_pd_DF['Time'], unit='s', utc=True)
-    #one_min_pd_DF = one_min_pd_DF.set_index('Time')
-    #one_min_pd_DF = one_min_pd_DF.tz_convert(tz='Asia/Kolkata')
+    one_min_long_flags = {'SAPM': 0, 'MAEMA': 0, 'ADX': 0, 'MACD': 0, 'RSI': 0}
+    one_min_shot_flags = {'SAPM': 0, 'MAEMA': 0, 'ADX': 0, 'MACD': 0, 'RSI': 0}
 
-    # all below used in three min data frame
-    #three_min_df = None
+    indicator_thread = None
+    hrhd_thread = None
+    sapm_thread = None
+
     three_min_pd_DF = pd.DataFrame([])
     three_min_ticks = []
     c_three_min = 0
