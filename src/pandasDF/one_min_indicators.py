@@ -2,7 +2,7 @@ from src.main.algo_bot_objects import AlgoBotObjects as abObj
 from src.loghandler import log
 import pandas as pd
 import traceback
-import talib as tb
+import math
 
 # Init Logging Facilities
 logger = log.setup_custom_logger('root')
@@ -196,7 +196,7 @@ def average_directional_movement_index(n, n_ADX):
         if 'ADX' not in abObj.one_min_pd_DF.columns:
             abObj.one_min_pd_DF = abObj.one_min_pd_DF.join(ADX.tail(1))
         else:
-            abObj.one_min_pd_DF._set_value(abObj.one_min_pd_DF.tail(1).index, 'ADX', ADX.tail(1).values[0])
+            abObj.one_min_pd_DF._set_value(abObj.one_min_pd_DF.tail(1).index, 'ADX', (math.ceil(ADX.tail(1).values[0]*100)))
 
     except:
         print(traceback.format_exc())
@@ -205,11 +205,44 @@ def average_directional_movement_index(n, n_ADX):
 
 def rsi(n):
     try:
-        RSI = pd.Series(tb.RSI(abObj.one_min_pd_DF['close'].values, timeperiod=n), index=abObj.one_min_pd_DF.index,
-                                name='RSI')
+        """Calculate Relative Strength Index(RSI) for given data.
+
+            :param df: pandas.DataFrame
+            :param n: 
+            :return: pandas.DataFrame
+            """
+        df = abObj.one_min_pd_DF.tail(100)
+        i = 0
+        UpI = [0]
+        DoI = [0]
+        for row in df.iterrows():
+            if (i != 0):
+        #while i + 1 <= df.index[-1]:
+                UpMove = df.loc[df.index[i]]['high'] - df.loc[df.index[i - 1]]['high']
+                DoMove = df.loc[df.index[i - 1]]['low'] - df.loc[df.index[i]]['low']
+                #UpMove = df.loc[i + 1, 'High'] - df.loc[i, 'High']
+                #DoMove = df.loc[i, 'Low'] - df.loc[i + 1, 'Low']
+                if UpMove > DoMove and UpMove > 0:
+                    UpD = UpMove
+                else:
+                    UpD = 0
+                UpI.append(UpD)
+                if DoMove > UpMove and DoMove > 0:
+                    DoD = DoMove
+                else:
+                    DoD = 0
+                DoI.append(DoD)
+            i = i + 1
+        UpI = pd.Series(UpI)
+        DoI = pd.Series(DoI)
+        PosDI = pd.Series(UpI.ewm(span=n, min_periods=n).mean())
+        NegDI = pd.Series(DoI.ewm(span=n, min_periods=n).mean())
+        RSI = pd.Series(PosDI / (PosDI + NegDI), name='RSI')
+
         if 'RSI' not in abObj.one_min_pd_DF.columns:
             abObj.one_min_pd_DF = abObj.one_min_pd_DF.join(RSI.tail(1))
         else:
-            abObj.one_min_pd_DF._set_value(RSI.tail(1).index, 'RSI', RSI.tail(1)[0])
+            abObj.one_min_pd_DF._set_value(abObj.one_min_pd_DF.tail(1).index, 'RSI', RSI.tail(1).values[0])
+
     except:
         logger.error(traceback.format_exc())
