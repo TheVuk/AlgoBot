@@ -25,11 +25,8 @@ class ThreeMinDF(object):
                 three_min_bars = ti.price.resample('3min').ohlc()
                 for index, row in three_min_bars.iterrows():
                     abObj.three_min_pd_DF = abObj.three_min_pd_DF.append(row)
-                indi_obj.moving_average(25)
-                indi_obj.exponential_moving_average(20)
-                indi_obj.macd(12, 26)
-                indi_obj.adx(20)
-                indi_obj.rsi(14)
+                    # print(row.name, str(row['open']),row['high'],row['low'],row['close'])
+                    indi_obj.load_indicators()
             except:
                 print(traceback.format_exc())
                 logger.error(traceback.format_exc())
@@ -37,24 +34,28 @@ class ThreeMinDF(object):
         tick_time = ticks.get('Timestamp')
         tick_price = ticks.get('Price')
         try:
+            # print(ticks)
             if len(abObj.three_min_ticks) > 0:
 
-                if int(str(time.strftime("%M", time.localtime(int(ticks.get('Timestamp')))))) > abObj.c_three_min:
+                if int(str(time.strftime("%M", time.localtime(int(tick_time))))) > abObj.c_three_min:
                     get_ohlc()
-                    #print(abObj.three_min_ticks, ',')
                     abObj.three_min_ticks.clear()
                     abObj.three_min_ticks.append([tick_time, tick_price])
                     abObj.c_three_min = int(str(time.strftime("%M", time.localtime(int(tick_time)))))+2
-                    if abObj.c_three_min > 59:
-                        abObj.c_three_min = 2
+                    #print(" - " , abObj.c_three_min)
+                    if abObj.c_three_min == 0:
+                        abObj.c_three_min = int(time.strftime("%M", time.localtime(int(tick_time)))) + 2
+
                 else:
                     abObj.three_min_ticks.append([tick_time, tick_price])
+                    # print(tick_time, tick_price)
                     if int(str(time.strftime("%M", time.localtime(int(ticks.get('Timestamp')))))) == 0:
-                        abObj.c_three_min = 2
+                        abObj.c_three_min = int(str(time.strftime("%M", time.localtime(int(tick_time)))))+2
 
             else:
                 abObj.c_three_min = int(str(time.strftime("%M", time.localtime(int(tick_time)))))+2
                 abObj.three_min_ticks.append([tick_time, tick_price])
+                # print(tick_time, tick_price)
         except:
             print(traceback.format_exc())
             logger.error(traceback.format_exc())

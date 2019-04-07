@@ -196,8 +196,10 @@ def average_directional_movement_index(n, n_ADX):
         if 'ADX' not in abObj.one_min_pd_DF.columns:
             abObj.one_min_pd_DF = abObj.one_min_pd_DF.join(ADX.tail(1))
         else:
-            abObj.one_min_pd_DF._set_value(abObj.one_min_pd_DF.tail(1).index, 'ADX', (math.ceil(ADX.tail(1).values[0]*100)))
-
+            try:
+                abObj.one_min_pd_DF._set_value(abObj.one_min_pd_DF.tail(1).index, 'ADX', (math.ceil(ADX.tail(1).values[0]*100)))
+            except:
+                pass
     except:
         print(traceback.format_exc())
         logger.error(traceback.format_exc())
