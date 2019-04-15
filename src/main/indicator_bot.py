@@ -1,16 +1,14 @@
 import traceback
 from src.loghandler import log
 from concurrent.futures import ThreadPoolExecutor
-from src.main.algo_bot_objects import AlgoBotObjects as abObj
-from src.pandasDF.one_min_df import OneMinDF as oneDF
-from src.pandasDF.three_min_df import ThreeMinDF as threeDF
-from src.main.vukalgo.sapm import Sapm as sapm_one_min
-from src.main.vukalgo.sapm_three_min import Sapm as sapm_three_min
+from src.dataframe.slow_df import SlowDF as SLDF
+from src.dataframe.fast_df import FastDF as FADF
+from src.main.vukalgo.sapm import Sapm as sapm
 
 logger = log.setup_custom_logger('root')
 
-sapm_obj_one = sapm_one_min()
-sapm_obj_three = sapm_three_min()
+sapm_obj_one = sapm()
+
 
 class IndicatorBot(object):
 
@@ -19,17 +17,13 @@ class IndicatorBot(object):
 
     @staticmethod
     def data_frame(ticks):
-        if abObj.parser.get('sapm', 'DF') == "1min":
-            oneDF.generate_one_min_df(ticks)
-        elif abObj.parser.get('sapm', 'DF') == "3min":
-            threeDF.generate_three_min_df(ticks)
+        # print(ticks)
+        SLDF.generate_slow_min_df(ticks)
+        FADF.generate_fast_min_df(ticks)
 
     @staticmethod
     def exe_sapm(ticks):
-        if abObj.parser.get('sapm', 'DF') == "1min":
-            sapm_obj_one.do_samp(ticks)
-        elif abObj.parser.get('sapm', 'DF') == "3min":
-            sapm_obj_three.do_samp(ticks)
+        sapm_obj_one.do_samp(ticks)
 
     def algo(self, ticks):
         try:

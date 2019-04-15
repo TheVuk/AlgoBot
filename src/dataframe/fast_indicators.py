@@ -10,16 +10,17 @@ logger = log.setup_custom_logger('root')
 
 def load_indicators():
     try:
-        #logger.info("Genrating Indicators")
-        moving_average(int(abObj.parser.get('ma', 'interval')))
-        exponential_moving_average(int(abObj.parser.get('ema', 'interval')))
-        macd(int(abObj.parser.get('macd', 'fast_interval')), int(abObj.parser.get('macd', 'slow_interval')))
-        average_directional_movement_index(int(abObj.parser.get('adx', 'interval')),
-                                           int(abObj.parser.get('adx', 'interval_ADX')))
-        rsi(int(abObj.parser.get('rsi', 'interval')))
-        # cur_row = abObj.three_min_pd_DF.loc[abObj.three_min_pd_DF.index[-1]]
-        # print(cur_row.name,str(cur_row['open']),cur_row['high'],cur_row['low'],cur_row['close']
-        #        ,cur_row['MA'],cur_row['EMA'],cur_row['MACD'],cur_row['ADX'],cur_row['RSI'])
+        if len(abObj.fast_min_pd_DF) >= int(abObj.parser.get('ma', 'interval')):
+            moving_average(int(abObj.parser.get('ma', 'interval')))
+        if len(abObj.fast_min_pd_DF) >= int(abObj.parser.get('ema', 'interval')):
+            exponential_moving_average(int(abObj.parser.get('ema', 'interval')))
+        if len(abObj.fast_min_pd_DF) >= int(abObj.parser.get('macd', 'slow_interval')):
+            macd(int(abObj.parser.get('macd', 'fast_interval')), int(abObj.parser.get('macd', 'slow_interval')))
+        if len(abObj.fast_min_pd_DF) >= int(abObj.parser.get('adx', 'interval')):
+            average_directional_movement_index(int(abObj.parser.get('adx', 'interval')),
+                                               int(abObj.parser.get('adx', 'interval_ADX')))
+        if len(abObj.fast_min_pd_DF) >= int(abObj.parser.get('rsi', 'interval')):
+            rsi(int(abObj.parser.get('rsi', 'interval')))
 
         if abObj.start_sapm is True:
             flag_it()
@@ -30,72 +31,68 @@ def load_indicators():
 def flag_it():
     try:
         # Long Entry
-        prev_row = abObj.three_min_pd_DF.loc[abObj.three_min_pd_DF.index[len(abObj.three_min_pd_DF)-2]]
-        cur_row = abObj.three_min_pd_DF.loc[abObj.three_min_pd_DF.index[-1]]
+        prev_row = abObj.fast_min_pd_DF.loc[abObj.fast_min_pd_DF.index[len(abObj.fast_min_pd_DF)-2]]
+        cur_row = abObj.fast_min_pd_DF.loc[abObj.fast_min_pd_DF.index[-1]]
         # MAEMA Flag Settings for long
-        if cur_row['EMA'] > prev_row['EMA']\
-                and cur_row['close'] > cur_row['EMA']\
+        if cur_row['EMA'] > prev_row['EMA'] and cur_row['close'] > cur_row['EMA']\
                 and prev_row['close'] > prev_row['EMA'] and cur_row['MA'] > prev_row['MA']:
-            abObj.three_min_long_flags['MAEMA'] = 1
+            abObj.long_flags['FA_MAEMA'] = 1
         else:
-            abObj.three_min_long_flags['MAEMA'] = 0
-
+            abObj.long_flags['FA_MAEMA'] = 0
         # RSI Flag Settings for long
         if int(abObj.parser.get('rsi', 'long_low')) <= cur_row['RSI'] <= int(abObj.parser.get('rsi', 'long_high')):
-            abObj.three_min_long_flags['RSI'] = 1
+            abObj.long_flags['FA_RSI'] = 1
         else:
-            abObj.three_min_long_flags['RSI'] = 0
-
+            abObj.long_flags['FA_RSI'] = 0
         # ADX Flag Settings for long
         if cur_row['PosDI'] > cur_row['NegDI'] and cur_row['ADX'] > prev_row['ADX'] and\
                 cur_row['ADX'] > cur_row['NegDI']:
             # and cur_row['PosDI'] > prev_row['PosDI']\
-            abObj.three_min_long_flags['ADX'] = 1
+            abObj.long_flags['FA_ADX'] = 1
         else:
-            abObj.three_min_long_flags['ADX'] = 0
-
+            abObj.long_flags['FA_ADX'] = 0
         # MACD Flag Setting for long
         if cur_row['MACD'] > cur_row['MACDsign'] \
                 and (cur_row['MACD']+prev_row['MACD']) > (cur_row['MACDsign']+prev_row['MACDsign']):
             #and cur_row['MACD'] < float(abObj.parser.get('macd', 'long_range'))\
-            abObj.three_min_long_flags['MACD'] = 1
+            abObj.long_flags['FA_MACD'] = 1
         else:
-            abObj.three_min_long_flags['MACD'] = 0
+            abObj.long_flags['FA_MACD'] = 0
 
         # Shot Entry
         # MAEMA Flag Settings for shot
         if cur_row['EMA'] < prev_row['EMA'] \
                 and cur_row['close'] < cur_row['EMA'] \
                 and prev_row['close'] < prev_row['EMA'] and cur_row['MA'] < prev_row['MA']:
-            abObj.three_min_shot_flags['MAEMA'] = 1
+            abObj.short_flags['FA_MAEMA'] = 1
         else:
-            abObj.three_min_shot_flags['MAEMA'] = 0
+            abObj.short_flags['FA_MAEMA'] = 0
 
         # RSI Flag Settings for shot
         if int(abObj.parser.get('rsi', 'shot_low')) <= cur_row['RSI'] <= int(abObj.parser.get('rsi', 'shot_high')):
-            abObj.three_min_shot_flags['RSI'] = 1
+            abObj.short_flags['FA_RSI'] = 1
         else:
-            abObj.three_min_shot_flags['RSI'] = 0
+            abObj.short_flags['FA_RSI'] = 0
 
         # ADX Flag Settings for short
         if cur_row['NegDI'] > cur_row['PosDI'] and cur_row['ADX'] > prev_row['ADX'] and\
                 cur_row['ADX'] > cur_row['PosDI']:
                 #and cur_row['NegDI'] > prev_row['NegDI'] \
-            abObj.three_min_shot_flags['ADX'] = 1
+            abObj.short_flags['FA_ADX'] = 1
         else:
-            abObj.three_min_shot_flags['ADX'] = 0
+            abObj.short_flags['FA_ADX'] = 0
 
         # MACD Flag Setting for shot
         if cur_row['MACD'] < cur_row['MACDsign']\
             and (cur_row['MACD'] + prev_row['MACD']) < (cur_row['MACDsign'] + prev_row['MACDsign']):
             # and cur_row['MACD'] < float(abObj.parser.get('macd', 'shot_range')) and \
-            abObj.three_min_shot_flags['MACD'] = 1
+            abObj.short_flags['FA_MACD'] = 1
         else:
-            abObj.three_min_shot_flags['MACD'] = 0
+            abObj.short_flags['FA_MACD'] = 0
         # print(cur_row.name,str(cur_row['open']),cur_row['high'],cur_row['low'],cur_row['close']
         #       ,cur_row['MA'],cur_row['EMA'],cur_row['MACD'],cur_row['ADX'],cur_row['RSI'])
-        # print("*L",abObj.three_min_long_flags)
-        # print("*S",abObj.three_min_shot_flags)
+        # print("*L",abObj.fast_min_long_flags)
+        # print("*S",abObj.fast_min_shot_flags)
 
     except:
         logger.error(traceback.format_exc())
@@ -103,54 +100,54 @@ def flag_it():
 
 def moving_average(n):
     try:
-        MA = pd.Series(abObj.three_min_pd_DF['close'].tail(n).rolling(n, min_periods=n).mean(), name='MA')
-        if 'MA' not in abObj.three_min_pd_DF.columns:
-            abObj.three_min_pd_DF = abObj.three_min_pd_DF.join(MA.tail(1))
+        MA = pd.Series(abObj.fast_min_pd_DF['close'].tail(n).rolling(n, min_periods=n).mean(), name='MA')
+        if 'MA' not in abObj.fast_min_pd_DF.columns:
+            abObj.fast_min_pd_DF = abObj.fast_min_pd_DF.join(MA.tail(1))
         else:
-            abObj.three_min_pd_DF._set_value(MA.tail(1).index, 'MA', MA.tail(1)[0])
+            abObj.fast_min_pd_DF._set_value(MA.tail(1).index, 'MA', MA.tail(1)[0])
     except:
         logger.error(traceback.format_exc())
 
 
 def exponential_moving_average(n):
     try:
-        EMA = pd.Series(abObj.three_min_pd_DF['close'].tail(n).ewm(span=n, min_periods=n).mean(), name='EMA')
-        if 'EMA' not in abObj.three_min_pd_DF.columns:
-            abObj.three_min_pd_DF = abObj.three_min_pd_DF.join(EMA.tail(1))
+        EMA = pd.Series(abObj.fast_min_pd_DF['close'].tail(n).ewm(span=n, min_periods=n).mean(), name='EMA')
+        if 'EMA' not in abObj.fast_min_pd_DF.columns:
+            abObj.fast_min_pd_DF = abObj.fast_min_pd_DF.join(EMA.tail(1))
         else:
-            abObj.three_min_pd_DF._set_value(EMA.tail(1).index, 'EMA', EMA.tail(1)[0])
+            abObj.fast_min_pd_DF._set_value(EMA.tail(1).index, 'EMA', EMA.tail(1)[0])
     except:
         logger.error(traceback.format_exc())
 
 
 def macd(n_fast, n_slow):
     try:
-        EMAfast = pd.Series(abObj.three_min_pd_DF['close'].tail(n_slow+10).ewm(span=n_fast, min_periods=n_slow).mean())
-        EMAslow = pd.Series(abObj.three_min_pd_DF['close'].tail(n_slow+10).ewm(span=n_slow, min_periods=n_slow).mean())
+        EMAfast = pd.Series(abObj.fast_min_pd_DF['close'].tail(n_slow+10).ewm(span=n_fast, min_periods=n_slow).mean())
+        EMAslow = pd.Series(abObj.fast_min_pd_DF['close'].tail(n_slow+10).ewm(span=n_slow, min_periods=n_slow).mean())
         MACD = pd.Series(EMAfast - EMAslow, name='MACD')
         MACDsign = pd.Series(MACD.ewm(span=9, min_periods=9).mean(), name='MACDsign')
         MACDdiff = pd.Series(MACD - MACDsign, name='MACDdiff')
-        if 'MACD' not in abObj.three_min_pd_DF.columns:
-            abObj.three_min_pd_DF = abObj.three_min_pd_DF.join(MACD.tail(1))
+        if 'MACD' not in abObj.fast_min_pd_DF.columns:
+            abObj.fast_min_pd_DF = abObj.fast_min_pd_DF.join(MACD.tail(1))
         else:
-            abObj.three_min_pd_DF._set_value(MACD.tail(1).index, 'MACD', MACD.tail(1)[0])
+            abObj.fast_min_pd_DF._set_value(MACD.tail(1).index, 'MACD', MACD.tail(1)[0])
 
-        if 'MACDsign' not in abObj.three_min_pd_DF.columns:
-            abObj.three_min_pd_DF = abObj.three_min_pd_DF.join(MACDsign.tail(1))
+        if 'MACDsign' not in abObj.fast_min_pd_DF.columns:
+            abObj.fast_min_pd_DF = abObj.fast_min_pd_DF.join(MACDsign.tail(1))
         else:
-            abObj.three_min_pd_DF._set_value(MACDsign.tail(1).index, 'MACDsign', MACDsign.tail(1)[0])
+            abObj.fast_min_pd_DF._set_value(MACDsign.tail(1).index, 'MACDsign', MACDsign.tail(1)[0])
 
-        if 'MACDdiff' not in abObj.three_min_pd_DF.columns:
-            abObj.three_min_pd_DF = abObj.three_min_pd_DF.join(MACDdiff.tail(1))
+        if 'MACDdiff' not in abObj.fast_min_pd_DF.columns:
+            abObj.fast_min_pd_DF = abObj.fast_min_pd_DF.join(MACDdiff.tail(1))
         else:
-            abObj.three_min_pd_DF._set_value(MACDdiff.tail(1).index, 'MACDdiff', MACDdiff.tail(1)[0])
+            abObj.fast_min_pd_DF._set_value(MACDdiff.tail(1).index, 'MACDdiff', MACDdiff.tail(1)[0])
     except:
         logger.error(traceback.format_exc())
 
 
 def average_directional_movement_index(n, n_ADX):
     try:
-        df = abObj.three_min_pd_DF.tail(100)
+        df = abObj.fast_min_pd_DF.tail(n+10)
         i = 0
         UpI = []
         DoI = []
@@ -187,21 +184,21 @@ def average_directional_movement_index(n, n_ADX):
         ADX = pd.Series((abs(PosDI - NegDI) / (PosDI + NegDI)).ewm(span=n_ADX, min_periods=n_ADX).mean(),
                         name='ADX')
 
-        if 'PosDI' not in abObj.three_min_pd_DF.columns:
-            abObj.three_min_pd_DF = abObj.three_min_pd_DF.join(PosDI.tail(1))
+        if 'PosDI' not in abObj.fast_min_pd_DF.columns:
+            abObj.fast_min_pd_DF = abObj.fast_min_pd_DF.join(PosDI.tail(1))
         else:
-            abObj.three_min_pd_DF._set_value(abObj.three_min_pd_DF.tail(1).index, 'PosDI', PosDI.loc[PosDI.index[len(PosDI)-2]])
+            abObj.fast_min_pd_DF._set_value(abObj.fast_min_pd_DF.tail(1).index, 'PosDI', math.ceil(PosDI.loc[PosDI.index[len(PosDI)-2]]*100))
 
-        if 'NegDI' not in abObj.three_min_pd_DF.columns:
-            abObj.three_min_pd_DF = abObj.three_min_pd_DF.join(NegDI.tail(1))
+        if 'NegDI' not in abObj.fast_min_pd_DF.columns:
+            abObj.fast_min_pd_DF = abObj.fast_min_pd_DF.join(NegDI.tail(1))
         else:
-            abObj.three_min_pd_DF._set_value(abObj.three_min_pd_DF.tail(1).index, 'NegDI', NegDI.loc[NegDI.index[len(NegDI)-2]])
+            abObj.fast_min_pd_DF._set_value(abObj.fast_min_pd_DF.tail(1).index, 'NegDI', math.ceil(NegDI.loc[NegDI.index[len(NegDI)-2]]*100))
 
-        if 'ADX' not in abObj.three_min_pd_DF.columns:
-            abObj.three_min_pd_DF = abObj.three_min_pd_DF.join(ADX.tail(1))
+        if 'ADX' not in abObj.fast_min_pd_DF.columns:
+            abObj.fast_min_pd_DF = abObj.fast_min_pd_DF.join(ADX.tail(1))
         else:
             try:
-                abObj.three_min_pd_DF._set_value(abObj.three_min_pd_DF.tail(1).index, 'ADX', (math.ceil(ADX.tail(1).values[0]*100)))
+                abObj.fast_min_pd_DF._set_value(abObj.fast_min_pd_DF.tail(1).index, 'ADX', (math.ceil(ADX.tail(1).values[0]*100)))
             except:
                 pass
     except:
@@ -217,7 +214,7 @@ def rsi(n):
             :param n: 
             :return: pandas.DataFrame
             """
-        df = abObj.three_min_pd_DF.tail(100)
+        df = abObj.fast_min_pd_DF.tail(n)
         i = 0
         UpI = [0]
         DoI = [0]
@@ -244,11 +241,9 @@ def rsi(n):
         PosDI = pd.Series(UpI.ewm(span=n, min_periods=n).mean())
         NegDI = pd.Series(DoI.ewm(span=n, min_periods=n).mean())
         RSI = pd.Series(PosDI / (PosDI + NegDI), name='RSI')
-
-        if 'RSI' not in abObj.three_min_pd_DF.columns:
-            abObj.three_min_pd_DF = abObj.three_min_pd_DF.join(RSI.tail(1))
+        if 'RSI' not in abObj.fast_min_pd_DF.columns:
+            abObj.fast_min_pd_DF = abObj.fast_min_pd_DF.join(RSI.tail(1))
         else:
-            abObj.three_min_pd_DF._set_value(abObj.three_min_pd_DF.tail(1).index, 'RSI', RSI.tail(1).values[0])
-
+            abObj.fast_min_pd_DF._set_value(abObj.fast_min_pd_DF.tail(1).index, 'RSI', RSI.tail(1).values[0])
     except:
         logger.error(traceback.format_exc())

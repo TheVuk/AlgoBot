@@ -12,20 +12,22 @@ class AlgoBotObjects:
     sapm_thread = None
     start_sapm = False
 
-    # all below used in one min data frame
-    one_min_ticks = []
-    c_one_min = 0
-    one_min_pd_DF = pd.DataFrame([])
-    one_min_long_flags = {'SAPM': 0, 'MAEMA': 0, 'ADX': 0, 'MACD': 0, 'RSI': 0}
-    one_min_shot_flags = {'SAPM': 0, 'MAEMA': 0, 'ADX': 0, 'MACD': 0, 'RSI': 0}
+    # all below used in fast min data frame
+    fast_min_ticks = []
+    fast_min = int(parser.get('common', 'fast_df'))
+    cur_fast_min = 0
+    fast_min_pd_DF = pd.DataFrame([])
+
+    # all below used in slow min data frame
+    slow_min_ticks = []
+    slow_min = int(parser.get('common', 'slow_df'))
+    cur_slow_min = 0
+    slow_min_pd_DF = pd.DataFrame([])
     # end
 
-    # all below used in one min data frame
-    three_min_ticks = []
-    c_three_min = 0
-    three_min_pd_DF = pd.DataFrame([])
-    three_min_long_flags = {'SAPM': 0, 'MAEMA': 0, 'ADX': 0, 'MACD': 0, 'RSI': 0}
-    three_min_shot_flags = {'SAPM': 0, 'MAEMA': 0, 'ADX': 0, 'MACD': 0, 'RSI': 0}
-    # end
+    # General flags
+    long_flags = {'FA_SAPM': 0, 'FA_MAEMA': 0, 'FA_ADX': 0, 'FA_MACD': 0, 'FA_RSI': 0,
+                  'SL_SAPM': 0, 'SL_MAEMA': 0, 'SL_ADX': 0, 'SL_MACD': 0, 'SL_RSI': 0}
 
-
+    short_flags = {'FA_SAPM': 0, 'FA_MAEMA': 0, 'FA_ADX': 0, 'FA_MACD': 0, 'FA_RSI': 0,
+                   'SL_SAPM': 0, 'SL_MAEMA': 0, 'SL_ADX': 0, 'SL_MACD': 0, 'SL_RSI': 0}
